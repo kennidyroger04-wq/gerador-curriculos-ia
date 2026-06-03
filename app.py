@@ -263,12 +263,7 @@ if "chat_history" not in st.session_state:
     st.session_state.chat_history = [
         {
             "role": "assistant",
-            "content": (
-                "👋 Olá! Sou o seu **Assistente AI de Criação de Currículo (com Escuta Ativa e IA ATS)**.\n\n"
-                "Eu sou capaz de entender várias informações ao mesmo tempo! Você pode se apresentar "
-                "por completo (nome, e-mail, fone e cidade) ou responder às minhas perguntas passo a passo.\n\n"
-                f"**{primeira_pergunta}**"
-            )
+            "content": primeira_pergunta
         }
     ]
 
@@ -567,6 +562,13 @@ with col_preview:
 # COLUNA DA DIREITA: CHAT INTERATIVO / PAINEL FINAL DE EXPORTAÇÃO
 # ------------------------------------------------------------------------------
 with col_chat:
+    with st.expander("💡 Como conversar com a nossa IA (Clique para expandir)", expanded=False):
+        st.markdown(
+            "👋 Olá! Sou o seu **Assistente AI de Criação de Currículo (com Escuta Ativa e IA ATS)**.\n\n"
+            "Eu sou capaz de entender várias informações ao mesmo tempo! Você pode se apresentar "
+            "por completo (nome, e-mail, fone e cidade) ou responder às minhas perguntas passo a passo."
+        )
+
     st.markdown(
         """
         <div style="background-color: rgba(30, 41, 59, 0.3); padding: 1.5rem; border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.05); min-height: 520px; display: flex; flex-direction: column;">
@@ -616,32 +618,43 @@ with col_chat:
                     st.error(f"Erro no processamento da IA ou do PDF: {str(e)}")
                     
         if st.session_state.pdfs_gerados:
-            st.success("✨ Currículos gerados e polidos com sucesso! Baixe as versões abaixo:")
+            st.success("Currículo otimizado com sucesso!")
             col_d1, col_d2 = st.columns(2)
             
             with col_d1:
-                if st.session_state.pdf_limpo_path and os.path.exists(st.session_state.pdf_limpo_path):
-                    with open(st.session_state.pdf_limpo_path, "rb") as f:
-                        pdf_limpo_bytes = f.read()
-                    st.download_button(
-                        label="📄 Baixar Currículo Oficial (Limpo)",
-                        data=pdf_limpo_bytes,
-                        file_name="curriculo_limpo.pdf",
-                        mime="application/pdf",
-                        use_container_width=True
-                    )
-            
-            with col_d2:
                 if st.session_state.pdf_previsao_path and os.path.exists(st.session_state.pdf_previsao_path):
                     with open(st.session_state.pdf_previsao_path, "rb") as f:
                         pdf_previsao_bytes = f.read()
                     st.download_button(
-                        label="⚠️ Baixar Currículo (Previsão)",
+                        label="👀 Baixar Previsão Grátis",
                         data=pdf_previsao_bytes,
                         file_name="curriculo_previsao.pdf",
                         mime="application/pdf",
                         use_container_width=True
                     )
+            
+            with col_d2:
+                st.link_button(
+                    label="💳 Pagar R$ 19,90 para Liberar PDF Oficial",
+                    url="COLOQUE_SEU_LINK_DO_MERCADO_PAGO_AQUI",
+                    use_container_width=True
+                )
+                
+            # Campo de liberação de Token abaixo das colunas
+            codigo_digitado = st.text_input("Já pagou? Digite seu código de liberação:")
+            if codigo_digitado == "APROVADO-ATS-26":
+                if st.session_state.pdf_limpo_path and os.path.exists(st.session_state.pdf_limpo_path):
+                    with open(st.session_state.pdf_limpo_path, "rb") as f:
+                        pdf_limpo_bytes = f.read()
+                    st.download_button(
+                        label="📄 Baixar Currículo Oficial",
+                        data=pdf_limpo_bytes,
+                        file_name="curriculo_limpo.pdf",
+                        mime="application/pdf",
+                        use_container_width=True
+                    )
+            elif codigo_digitado != "":
+                st.error("Código inválido.")
                     
     # --------------------------------------------------------------------------
     # BLOCO CONDICIONAL: CHAT ATIVO (Esconde o input quando finalizado)
