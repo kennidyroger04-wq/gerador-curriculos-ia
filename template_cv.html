@@ -14,62 +14,87 @@
             }
         }
         body {
-            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            font-family: Helvetica, Arial, sans-serif;
             color: #1f2937;
             line-height: 1.5;
-            font-size: 10.5pt;
+            font-size: 10pt;
             margin: 0;
             padding: 0;
         }
         .header {
             text-align: center;
-            border-bottom: 2px solid #4f46e5;
-            padding-bottom: 12px;
+            padding-bottom: 15px;
             margin-bottom: 20px;
         }
         .name {
-            font-size: 24pt;
+            font-size: 26pt;
             font-weight: 700;
             color: #111827;
             margin: 0;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 1.5px;
         }
         .contact-info {
             font-size: 9pt;
             color: #4b5563;
-            margin-top: 8px;
+            margin-top: 10px;
             margin-bottom: 0;
+            letter-spacing: 0.5px;
         }
         .contact-item {
             display: inline-block;
+        }
+        .separator {
             margin: 0 8px;
+            color: #9ca3af;
+            font-weight: 300;
         }
         .section {
-            margin-bottom: 20px;
+            margin-bottom: 22px;
         }
         .section-title {
-            font-size: 11.5pt;
+            font-size: 12pt;
             font-weight: 700;
-            color: #4f46e5;
-            border-bottom: 1px solid #e5e7eb;
-            padding-bottom: 4px;
-            margin-bottom: 8px;
+            color: #111827;
+            border-bottom: 2px solid #333;
+            padding-bottom: 3px;
+            margin-bottom: 12px;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.8px;
         }
         .summary {
             text-align: justify;
             font-size: 10pt;
             color: #374151;
+            margin-top: 6px;
         }
         .entry {
-            margin-bottom: 8px;
+            margin-bottom: 14px;
+        }
+        .entry-header {
+            overflow: hidden; /* Clearfix para floats */
+            margin-bottom: 4px;
         }
         .entry-title {
-            font-weight: 600;
+            float: left;
             font-size: 10.5pt;
             color: #111827;
+        }
+        .entry-date {
+            float: right;
+            font-size: 10pt;
+            color: #4b5563;
+            font-style: italic;
+        }
+        .entry-content {
+            clear: both;
+            margin-top: 4px;
+        }
+        .description {
+            text-align: justify;
+            font-size: 9.5pt;
+            color: #4b5563;
+            margin: 0;
         }
         .skills-container {
             margin-top: 6px;
@@ -86,47 +111,54 @@
             margin-bottom: 6px;
         }
         
-        /* CSS especial para marca d'água suportada pelo WeasyPrint */
-        .watermark {
-            position: fixed;
-            top: 42%;
-            left: 12%;
-            transform: rotate(-40deg);
-            font-size: 70pt;
-            font-weight: 900;
-            color: rgba(239, 68, 68, 0.08);
-            z-index: -1000;
-            white-space: nowrap;
-            letter-spacing: 15px;
-            pointer-events: none;
+        /* CSS para as tarjas de censura na versão de Previsão */
+        .censored-box {
+            background-color: #374151; /* Cinza Escuro */
+            color: #ffffff;
+            text-align: center;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 9pt;
+            font-weight: bold;
+            margin-top: 6px;
+            margin-bottom: 6px;
+            border: 1px dashed #ef4444; /* Destaque sutil em vermelho */
         }
     </style>
 </head>
 <body>
     
-    {% if preview_mode %}
-    <div class="watermark">PREVISÃO</div>
-    {% endif %}
-    
     <div class="header">
         <div class="name">{{ personal_info.full_name }}</div>
         <div class="contact-info">
+            {% set contact_items = [] %}
             {% if personal_info.contact.email %}
-            <span class="contact-item">✉ {{ personal_info.contact.email }}</span>
+                {% set _ = contact_items.append("✉ " ~ personal_info.contact.email) %}
             {% endif %}
             {% if personal_info.contact.phone %}
-            <span class="contact-item">☎ {{ personal_info.contact.phone }}</span>
+                {% set _ = contact_items.append("☎ " ~ personal_info.contact.phone) %}
             {% endif %}
             {% if personal_info.location.city %}
-            <span class="contact-item">📍 {{ personal_info.location.city }}</span>
+                {% set _ = contact_items.append("📍 " ~ personal_info.location.city) %}
             {% endif %}
+            
+            {% for item in contact_items %}
+                <span class="contact-item">{{ item }}</span>
+                {% if not loop.last %}
+                    <span class="separator">|</span>
+                {% endif %}
+            {% endfor %}
         </div>
     </div>
 
     {% if professional_summary %}
     <div class="section">
         <div class="section-title">Resumo Profissional</div>
-        <div class="summary">{{ professional_summary }}</div>
+        {% if eh_previsao %}
+            <div class="censored-box">🔒 Conteúdo otimizado pela IA oculto. Desbloqueie a versão oficial para visualizar.</div>
+        {% else %}
+            <div class="summary">{{ professional_summary }}</div>
+        {% endif %}
     </div>
     {% endif %}
 
@@ -146,7 +178,29 @@
         <div class="section-title">Experiência Profissional</div>
         {% for exp in work_experience %}
         <div class="entry">
-            <div class="entry-title">💼 {{ exp.role_company }}</div>
+            <div class="entry-header">
+                <span class="entry-title">
+                    {% if exp.role and exp.company %}
+                        <strong>{{ exp.role }}</strong> na <em>{{ exp.company }}</em>
+                    {% else %}
+                        <strong>{{ exp.role_company }}</strong>
+                    {% endif %}
+                </span>
+                <span class="entry-date">
+                    {{ exp.period | default(exp.dates | default('')) }}
+                </span>
+            </div>
+            <div class="entry-content">
+                {% if eh_previsao %}
+                    <div class="censored-box">🔒 Conteúdo otimizado pela IA oculto. Desbloqueie a versão oficial para visualizar.</div>
+                {% else %}
+                    {% if exp.description %}
+                        <p class="description">{{ exp.description }}</p>
+                    {% elif exp.activities %}
+                        <p class="description">{{ exp.activities }}</p>
+                    {% endif %}
+                {% endif %}
+            </div>
         </div>
         {% endfor %}
     </div>
@@ -157,7 +211,27 @@
         <div class="section-title">Formação Acadêmica</div>
         {% for edu in education %}
         <div class="entry">
-            <div class="entry-title">🎓 {{ edu.degree_institution }}</div>
+            <div class="entry-header">
+                <span class="entry-title">
+                    {% if edu.degree and edu.institution %}
+                        <strong>{{ edu.degree }}</strong> - <em>{{ edu.institution }}</em>
+                    {% else %}
+                        <strong>{{ edu.degree_institution }}</strong>
+                    {% endif %}
+                </span>
+                <span class="entry-date">
+                    {{ edu.period | default(edu.dates | default('')) }}
+                </span>
+            </div>
+            <div class="entry-content">
+                {% if eh_previsao %}
+                    <div class="censored-box">🔒 Conteúdo otimizado pela IA oculto. Desbloqueie a versão oficial para visualizar.</div>
+                {% else %}
+                    {% if edu.description %}
+                        <p class="description">{{ edu.description }}</p>
+                    {% endif %}
+                {% endif %}
+            </div>
         </div>
         {% endfor %}
     </div>

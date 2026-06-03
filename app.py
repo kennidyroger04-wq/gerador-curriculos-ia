@@ -190,7 +190,8 @@ def gerar_pdfs(dados_resume):
         skills=dados_resume.get("skills", {}),
         work_experience=dados_resume.get("work_experience", []),
         education=dados_resume.get("education", []),
-        preview_mode=False
+        preview_mode=False,
+        eh_previsao=False
     )
     
     html_previsao = template.render(
@@ -199,7 +200,8 @@ def gerar_pdfs(dados_resume):
         skills=dados_resume.get("skills", {}),
         work_experience=dados_resume.get("work_experience", []),
         education=dados_resume.get("education", []),
-        preview_mode=True
+        preview_mode=True,
+        eh_previsao=True
     )
     
     temp_dir = tempfile.gettempdir()
