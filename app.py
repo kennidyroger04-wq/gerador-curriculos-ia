@@ -569,21 +569,9 @@ with col_chat:
             "por completo (nome, e-mail, fone e cidade) ou responder às minhas perguntas passo a passo."
         )
 
-    st.markdown(
-        """
-        <div style="background-color: rgba(30, 41, 59, 0.3); padding: 1.5rem; border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.05); min-height: 520px; display: flex; flex-direction: column;">
-            <h4 style="margin-top: 0; color: #818cf8; display: flex; align-items: center; gap: 8px;">
-                💬 Chat com o Assistente
-            </h4>
-        """, 
-        unsafe_allow_html=True
-    )
-
     for msg in st.session_state.chat_history:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
-            
-    st.markdown("</div>", unsafe_allow_html=True)
     
     # --------------------------------------------------------------------------
     # BLOCO CONDICIONAL: FINALIZADO (st.session_state.etapa_atual == "completed")
