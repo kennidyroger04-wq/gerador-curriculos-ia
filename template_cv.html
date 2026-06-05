@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <title>Currículo — {{ personal_info.full_name }}</title>
     <style>
+        /* CSS 100% Blindado para WeasyPrint (Sem Floats ou Flexbox complexos) */
         @page {
             size: A4;
             margin: 20mm 15mm 20mm 15mm;
@@ -41,17 +42,10 @@
             margin-bottom: 0;
             letter-spacing: 0.5px;
         }
-        .contact-item {
-            display: inline-block;
-        }
-        .separator {
-            margin: 0 8px;
-            color: #9ca3af;
-            font-weight: 300;
-        }
-        .section {
-            margin-bottom: 22px;
-        }
+        .contact-item { display: inline-block; }
+        .separator { margin: 0 8px; color: #9ca3af; font-weight: 300; }
+        
+        .section { margin-bottom: 22px; }
         .section-title {
             font-size: 12pt;
             font-weight: 700;
@@ -62,43 +56,54 @@
             text-transform: uppercase;
             letter-spacing: 0.8px;
         }
+        
         .summary {
             text-align: justify;
             font-size: 10pt;
             color: #374151;
             margin-top: 6px;
         }
+        
         .entry {
-            margin-bottom: 14px;
+            margin-bottom: 16px;
+            page-break-inside: avoid; /* Impede que uma experiência seja cortada na metade da página */
         }
-        .entry-header {
-            overflow: hidden; /* Clearfix para floats */
+        
+        /* Layout em Tabela para garantir alinhamento perfeito sem usar float */
+        .entry-header-table {
+            width: 100%;
+            border-collapse: collapse;
             margin-bottom: 4px;
         }
-        .entry-title {
-            float: left;
+        .entry-title-cell {
+            text-align: left;
             font-size: 10.5pt;
             color: #111827;
         }
-        .entry-date {
-            float: right;
+        .entry-date-cell {
+            text-align: right;
             font-size: 10pt;
             color: #4b5563;
             font-style: italic;
+            white-space: nowrap;
+            vertical-align: top;
+            width: 25%;
         }
-        .entry-content {
-            clear: both;
+
+        /* Estilos para a lista HTML (Bullet Points) gerada pela IA */
+        .description-list {
             margin-top: 4px;
+            margin-bottom: 0;
+            padding-left: 20px;
         }
-        .description {
+        .description-list li {
             text-align: justify;
             font-size: 9.5pt;
             color: #4b5563;
-            margin: 0;
+            margin-bottom: 4px;
         }
-        .skills-container {
-            margin-top: 6px;
-        }
+        
+        .skills-container { margin-top: 6px; display: block; width: 100%; }
         .skill-item {
             display: inline-block;
             background-color: #f3f4f6;
@@ -111,9 +116,9 @@
             margin-bottom: 6px;
         }
         
-        /* CSS para as tarjas de censura na versão de Previsão */
+        /* A sua Tarja de Censura Fantástica - Mantida e Otimizada */
         .censored-box {
-            background-color: #374151; /* Cinza Escuro */
+            background-color: #374151;
             color: #ffffff;
             text-align: center;
             padding: 10px;
@@ -122,7 +127,7 @@
             font-weight: bold;
             margin-top: 6px;
             margin-bottom: 6px;
-            border: 1px dashed #ef4444; /* Destaque sutil em vermelho */
+            border: 1px dashed #ef4444;
         }
     </style>
 </head>
@@ -155,7 +160,7 @@
     <div class="section">
         <div class="section-title">Resumo Profissional</div>
         {% if eh_previsao %}
-            <div class="censored-box">🔒 Conteúdo otimizado pela IA oculto. Desbloqueie a versão oficial para visualizar.</div>
+            <div class="censored-box">🔒 Conteúdo de Alto Impacto otimizado pela IA oculto. Desbloqueie a versão oficial para visualizar.</div>
         {% else %}
             <div class="summary">{{ professional_summary }}</div>
         {% endif %}
@@ -178,27 +183,30 @@
         <div class="section-title">Experiência Profissional</div>
         {% for exp in work_experience %}
         <div class="entry">
-            <div class="entry-header">
-                <span class="entry-title">
-                    {% if exp.role and exp.company %}
-                        <strong>{{ exp.role }}</strong> na <em>{{ exp.company }}</em>
-                    {% else %}
-                        <strong>{{ exp.role_company }}</strong>
-                    {% endif %}
-                </span>
-                <span class="entry-date">
-                    {{ exp.period | default(exp.dates | default('')) }}
-                </span>
-            </div>
-            <div class="entry-content">
+            <!-- Tabela invisível substitui o float para garantir alinhamento perfeito -->
+            <table class="entry-header-table">
+                <tr>
+                    <td class="entry-title-cell">
+                        {% if exp.role and exp.company %}
+                            <strong>{{ exp.role }}</strong> | <em>{{ exp.company }}</em>
+                        {% else %}
+                            <strong>{{ exp.role_company | default('Experiência') }}</strong>
+                        {% endif %}
+                    </td>
+                    <td class="entry-date-cell">
+                        {{ exp.period | default(exp.dates | default('')) }}
+                    </td>
+                </tr>
+            </table>
+            
+            <div>
                 {% if eh_previsao %}
-                    <div class="censored-box">🔒 Conteúdo otimizado pela IA oculto. Desbloqueie a versão oficial para visualizar.</div>
+                    <div class="censored-box">🔒 Tarefas e Resultados (Método STAR) ocultos. Desbloqueie a versão oficial.</div>
                 {% else %}
-                    {% if exp.description %}
-                        <p class="description">{{ exp.description }}</p>
-                    {% elif exp.activities %}
-                        <p class="description">{{ exp.activities }}</p>
-                    {% endif %}
+                    <!-- O filtro | safe é o que permite as bolinhas do HTML aparecerem! -->
+                    <div class="description-list">
+                        {{ exp.description | safe }}
+                    </div>
                 {% endif %}
             </div>
         </div>
@@ -211,24 +219,27 @@
         <div class="section-title">Formação Acadêmica</div>
         {% for edu in education %}
         <div class="entry">
-            <div class="entry-header">
-                <span class="entry-title">
-                    {% if edu.degree and edu.institution %}
-                        <strong>{{ edu.degree }}</strong> - <em>{{ edu.institution }}</em>
-                    {% else %}
-                        <strong>{{ edu.degree_institution }}</strong>
-                    {% endif %}
-                </span>
-                <span class="entry-date">
-                    {{ edu.period | default(edu.dates | default('')) }}
-                </span>
-            </div>
-            <div class="entry-content">
-                {% if eh_previsao %}
-                    <div class="censored-box">🔒 Conteúdo otimizado pela IA oculto. Desbloqueie a versão oficial para visualizar.</div>
+            <table class="entry-header-table">
+                <tr>
+                    <td class="entry-title-cell">
+                        {% if edu.degree and edu.institution %}
+                            <strong>{{ edu.degree }}</strong> | <em>{{ edu.institution }}</em>
+                        {% else %}
+                            <strong>{{ edu.degree_institution | default('Formação') }}</strong>
+                        {% endif %}
+                    </td>
+                    <td class="entry-date-cell">
+                        {{ edu.period | default(edu.dates | default('')) }}
+                    </td>
+                </tr>
+            </table>
+            
+            <div>
+                {% if eh_previsao and edu.description %}
+                    <div class="censored-box">🔒 Detalhes da formação ocultos.</div>
                 {% else %}
                     {% if edu.description %}
-                        <p class="description">{{ edu.description }}</p>
+                        <div class="summary">{{ edu.description | safe }}</div>
                     {% endif %}
                 {% endif %}
             </div>
