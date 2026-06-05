@@ -100,7 +100,11 @@ garantir_template_html()
 # ==============================================================================
 if "resume" not in st.session_state:
     st.session_state.resume = {
-        "personal_info": {"full_name": "", "contact": {"email": "", "phone": ""}, "location": {"city": ""}},
+        "personal_info": {
+            "full_name": "",
+            "contact": {"email": "", "phone": ""},
+            "location": {"city": ""}
+        },
         "professional_summary": "",
         "work_experience": [],
         "education": [],
@@ -134,7 +138,6 @@ def polir_curriculo_com_ia(dados_brutos):
     client = OpenAI(api_key=API_KEY)
     vaga_alvo = st.session_state.vaga_alvo if st.session_state.vaga_alvo else "qualquer área"
     
-    # PROMPT AGRESSIVO (Exatamente como definido no seu planejamento)
     system_prompt = (
         f"Você é um Headhunter sênior escrevendo um currículo ATS. O usuário busca a vaga: '{vaga_alvo}'. "
         "Ele tem um perfil avesso a escrever. Se as experiências profissionais dele tiverem descrições pobres ou vazias, "
@@ -216,7 +219,7 @@ def gerar_pdfs(dados_resume):
     return path_limpo, path_previsao
 
 # ==============================================================================
-# ESTILIZAÇÃO PREMIUM CSS (RESTAURADA E COMPLETA)
+# ESTILIZAÇÃO PREMIUM CSS (NOVA PALETA LIMPA - OCEAN BLUE & SLATE)
 # ==============================================================================
 st.markdown(
     """
@@ -231,11 +234,19 @@ st.markdown(
     footer {visibility: hidden;}
     header {visibility: hidden;}
     
+    /* Fundo da aplicação: Grafite escuro e profundo, sem tons roxos */
     .stApp {
-        background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+        background: linear-gradient(135deg, #0f172a 0%, #020617 100%);
         color: #f8fafc;
     }
 
+    [data-testid="stSidebar"] {
+        background-color: rgba(15, 23, 42, 0.95) !important;
+        border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+        padding-top: 2rem;
+    }
+
+    /* Cards de Visualização */
     .preview-card {
         background: rgba(30, 41, 59, 0.7);
         border: 1px solid rgba(255, 255, 255, 0.05);
@@ -247,15 +258,16 @@ st.markdown(
     }
     
     .preview-card:hover {
-        border-color: rgba(99, 102, 241, 0.4);
-        box-shadow: 0 4px 20px rgba(99, 102, 241, 0.1);
+        border-color: rgba(56, 189, 248, 0.4); /* Azul Claro no Hover */
+        box-shadow: 0 4px 20px rgba(56, 189, 248, 0.1);
         transform: translateY(-2px);
     }
 
+    /* Títulos dos Cards */
     .preview-header {
         font-weight: 600;
         font-size: 1.05rem;
-        color: #818cf8;
+        color: #38bdf8; /* Sky Blue Clean */
         margin-bottom: 0.4rem;
         display: flex;
         align-items: center;
@@ -269,16 +281,17 @@ st.markdown(
     }
 
     .preview-value {
-        color: #cbd5e1;
+        color: #e2e8f0;
         font-size: 0.9rem;
         line-height: 1.4;
     }
 
+    /* Tags de Habilidades */
     .skill-badge {
         display: inline-block;
-        background-color: rgba(99, 102, 241, 0.15);
-        color: #a5b4fc;
-        border: 1px solid rgba(99, 102, 241, 0.3);
+        background-color: rgba(56, 189, 248, 0.15); /* Fundo Azul Translúcido */
+        color: #7dd3fc; /* Texto Azul Claro */
+        border: 1px solid rgba(56, 189, 248, 0.3);
         border-radius: 6px;
         padding: 0.15rem 0.45rem;
         font-size: 0.8rem;
@@ -286,6 +299,7 @@ st.markdown(
         margin-bottom: 0.3rem;
     }
 
+    /* Balões do Chat */
     .stChatMessage {
         background-color: rgba(30, 41, 59, 0.5) !important;
         border: 1px solid rgba(255, 255, 255, 0.03) !important;
@@ -295,12 +309,26 @@ st.markdown(
         backdrop-filter: blur(5px);
     }
     
+    /* Ícone do Robô Assistente */
     [data-testid="chatAvatarIcon-assistant"] {
-        background-color: #6366f1 !important;
+        background-color: #2563eb !important; /* Azul Profissional */
     }
 
+    /* Campo de Digitação */
+    .stChatInputContainer {
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        background-color: rgba(15, 23, 42, 0.9) !important;
+        border-radius: 12px !important;
+        box-shadow: 0 -4px 30px rgba(0, 0, 0, 0.3) !important;
+    }
+
+    .stChatInputContainer:focus-within {
+        border-color: #38bdf8 !important; /* Foco em Azul Claro */
+    }
+
+    /* Título Principal no Topo */
     .app-header {
-        background: linear-gradient(90deg, #6366f1 0%, #a855f7 100%);
+        background: linear-gradient(90deg, #2563eb 0%, #38bdf8 100%); /* Gradiente Azul */
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         font-weight: 800;
@@ -315,17 +343,19 @@ st.markdown(
         margin-bottom: 1.5rem;
     }
 
+    /* Crachá de Status */
     .status-badge {
         display: inline-block;
         padding: 0.25rem 0.6rem;
         border-radius: 9999px;
         font-size: 0.75rem;
         font-weight: 600;
-        background-color: rgba(99, 102, 241, 0.15);
-        color: #a5b4fc;
-        border: 1px solid rgba(99, 102, 241, 0.3);
+        background-color: rgba(56, 189, 248, 0.15);
+        color: #7dd3fc;
+        border: 1px solid rgba(56, 189, 248, 0.3);
     }
 
+    /* Barra de Progresso */
     .progress-bar-container {
         margin: 1rem 0;
         background: rgba(255, 255, 255, 0.05);
@@ -335,14 +365,15 @@ st.markdown(
     }
 
     .progress-bar-fill {
-        background: linear-gradient(90deg, #6366f1, #a855f7);
+        background: linear-gradient(90deg, #2563eb, #38bdf8); /* Gradiente Azul */
         height: 100%;
         border-radius: 9999px;
         transition: width 0.5s ease-in-out;
     }
     
+    /* Botões Principais */
     .stButton>button {
-        background: linear-gradient(90deg, #6366f1 0%, #a855f7 100%) !important;
+        background: linear-gradient(90deg, #2563eb 0%, #38bdf8 100%) !important;
         color: white !important;
         border: none !important;
         font-weight: 600 !important;
@@ -353,7 +384,7 @@ st.markdown(
     
     .stButton>button:hover {
         transform: translateY(-1px) !important;
-        box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4) !important;
+        box-shadow: 0 4px 15px rgba(56, 189, 248, 0.4) !important;
     }
     </style>
     """,
@@ -361,34 +392,52 @@ st.markdown(
 )
 
 # ==============================================================================
-# LAYOUT SPA (COLUNAS) E VISUALIZAÇÃO RICA
+# PROCESSAMENTO DO PROGRESSO
 # ==============================================================================
-progresso_map = {"vaga_alvo": 10, "coleta_basica": 30, "lapidacao": 70, "geracao": 100}
+progresso_map = {
+    "vaga_alvo": 10,
+    "coleta_basica": 30,
+    "lapidacao": 70,
+    "geracao": 100
+}
 progresso_percentual = progresso_map.get(st.session_state.step, 10)
 
+# ==============================================================================
+# LAYOUT SPA (Duas Colunas Principais)
+# ==============================================================================
 col_preview, col_chat = st.columns([1, 2], gap="large")
 
+# ------------------------------------------------------------------------------
+# COLUNA DA ESQUERDA: VISUALIZADOR DE CURRÍCULO (PREVIEW + JSON)
+# ------------------------------------------------------------------------------
 with col_preview:
     st.markdown('<div class="app-header">CurrículoBuilder</div>', unsafe_allow_html=True)
     st.markdown('<div class="app-subtitle">Criação Interativa e Inteligente</div>', unsafe_allow_html=True)
     
     st.markdown(f'<div class="status-badge">Progresso: {progresso_percentual}%</div>', unsafe_allow_html=True)
-    st.markdown(f'<div class="progress-bar-container"><div class="progress-bar-fill" style="width: {progresso_percentual}%;"></div></div>', unsafe_allow_html=True)
+    st.markdown(
+        f"""
+        <div class="progress-bar-container">
+            <div class="progress-bar-fill" style="width: {progresso_percentual}%;"></div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
     
     st.write("---")
     
-    tab_visual, tab_json = st.tabs(["📝 Rascunho Visual", "💾 JSON Interno"])
+    tab_visual, tab_json = st.tabs(["📝 Rascunho Visual", "💾 JSON em Tempo Real"])
     
     with tab_visual:
         resume = st.session_state.resume
         
-        # 1. Informações Pessoais
         full_name = resume["personal_info"].get("full_name")
         email = resume["personal_info"]["contact"].get("email")
         phone = resume["personal_info"]["contact"].get("phone")
         city = resume["personal_info"]["location"].get("city")
         
         has_info = any([full_name, email, phone, city])
+        
         info_html = ""
         if full_name: info_html += f"<b>Nome:</b> {full_name}<br>"
         if email: info_html += f"<b>E-mail:</b> {email}<br>"
@@ -405,7 +454,6 @@ with col_preview:
             unsafe_allow_html=True
         )
         
-        # 2. Resumo Profissional
         summary = resume.get("professional_summary")
         st.markdown(
             f"""
@@ -417,7 +465,6 @@ with col_preview:
             unsafe_allow_html=True
         )
         
-        # 3. Habilidades (Badges)
         skills = resume.get("skills", {})
         skills_html = "".join(f'<span class="skill-badge">{skill}</span>' for skill in skills.keys())
         st.markdown(
@@ -430,7 +477,6 @@ with col_preview:
             unsafe_allow_html=True
         )
         
-        # 4. Experiências
         experiences = resume.get("work_experience", [])
         exp_html = ""
         for exp in experiences:
@@ -446,7 +492,6 @@ with col_preview:
             unsafe_allow_html=True
         )
         
-        # 5. Educação
         education = resume.get("education", [])
         edu_html = ""
         for edu in education:
@@ -466,6 +511,9 @@ with col_preview:
         st.markdown("<p style='color:#64748b; font-size:0.85rem; margin-bottom: 0.5rem;'>Representação exata de st.session_state.resume:</p>", unsafe_allow_html=True)
         st.json(st.session_state.resume)
 
+# ------------------------------------------------------------------------------
+# COLUNA DA DIREITA: CHAT INTERATIVO E PAINEL FINAL DE EXPORTAÇÃO
+# ------------------------------------------------------------------------------
 with col_chat:
     with st.expander("💡 Como conversar com a nossa IA (Clique para expandir)", expanded=False):
         st.markdown(
@@ -479,97 +527,146 @@ with col_chat:
             st.markdown(msg["content"])
     
     # ==========================================================================
-    # FINALIZAÇÃO (BOTÃO E PAGAMENTO)
+    # BLOCO CONDICIONAL LÓGICO: GERAÇÃO FINAL E DOWNLOADS
     # ==========================================================================
     if st.session_state.step == "geracao":
-        st.info("🏆 **Coleta Finalizada!** Clique abaixo para nossa IA criar a mágica.")
+        st.markdown("<br>", unsafe_allow_html=True)
         
-        if st.button("🚀 Gerar Currículos em PDF", use_container_width=True):
-            with st.spinner("Headhunter IA escrevendo seu currículo (Método STAR)..."):
-                dados_polidos = polir_curriculo_com_ia(st.session_state.resume)
-                path_limpo, path_previsao = gerar_pdfs(dados_polidos)
-                st.session_state.pdf_limpo_path = path_limpo
-                st.session_state.pdf_previsao_path = path_previsao
-                st.session_state.pdfs_gerados = True
+        if not WEASYPRINT_INSTALLED or not OPENAI_INSTALLED:
+            st.warning("⚠️ Dependências ausentes no ambiente! Instale `weasyprint` e `openai`.")
+            
+        st.info("🏆 **Coleta Finalizada!** Clique abaixo para polir seu currículo com IA e gerar os seus arquivos em PDF.")
+        
+        if st.button("🚀 Gerar Currículos em PDF", use_container_width=True, disabled=not WEASYPRINT_INSTALLED or not OPENAI_INSTALLED):
+            with st.spinner("Aguarde... Nossa IA Headhunter está polindo e otimizando o seu currículo para sistemas ATS!"):
+                try:
+                    dados_polidos = polir_curriculo_com_ia(st.session_state.resume)
+                    path_limpo, path_previsao = gerar_pdfs(dados_polidos)
+                    
+                    st.session_state.pdf_limpo_path = path_limpo
+                    st.session_state.pdf_previsao_path = path_previsao
+                    st.session_state.pdfs_gerados = True
+                except Exception as e:
+                    st.error(f"Erro no processamento da IA ou do PDF: {str(e)}")
                     
         if st.session_state.pdfs_gerados:
-            st.success("Pronto! Veja a previsão gratuita.")
+            st.success("Currículo otimizado com sucesso!")
             col_d1, col_d2 = st.columns(2)
+            
             with col_d1:
-                with open(st.session_state.pdf_previsao_path, "rb") as f:
-                    st.download_button("👀 Baixar Previsão Grátis", f.read(), "previsao.pdf", "application/pdf", use_container_width=True)
+                if st.session_state.pdf_previsao_path and os.path.exists(st.session_state.pdf_previsao_path):
+                    with open(st.session_state.pdf_previsao_path, "rb") as f:
+                        pdf_previsao_bytes = f.read()
+                    st.download_button(
+                        label="👀 Baixar Previsão Grátis",
+                        data=pdf_previsao_bytes,
+                        file_name="curriculo_previsao.pdf",
+                        mime="application/pdf",
+                        use_container_width=True
+                    )
+            
             with col_d2:
-                st.link_button("💳 Pagar R$ 1,99 para Liberar Oficial", "COLOQUE_SEU_LINK", use_container_width=True)
+                st.link_button(
+                    label="💳 Pagar R$ 1,99 para Liberar PDF Oficial",
+                    url="COLOQUE_SEU_LINK_DO_MERCADO_PAGO_AQUI",
+                    use_container_width=True
+                )
                 
-            codigo_digitado = st.text_input("Código de liberação:")
-            if codigo_digitado == st.secrets.get("TOKEN_LIBERACAO", "APROVADO-ATS-26"):
-                with open(st.session_state.pdf_limpo_path, "rb") as f:
-                    st.download_button("📄 Baixar Oficial", f.read(), "curriculo_oficial.pdf", "application/pdf", use_container_width=True)
+            codigo_digitado = st.text_input("Já pagou? Digite seu código de liberação:")
+            VALOR_TOKEN_SEGURO = st.secrets.get("TOKEN_LIBERACAO", "APROVADO-ATS-26")
+            
+            if codigo_digitado == VALOR_TOKEN_SEGURO:
+                if st.session_state.pdf_limpo_path and os.path.exists(st.session_state.pdf_limpo_path):
+                    with open(st.session_state.pdf_limpo_path, "rb") as f:
+                        pdf_limpo_bytes = f.read()
+                    st.download_button(
+                        label="📄 Baixar Currículo Oficial",
+                        data=pdf_limpo_bytes,
+                        file_name="curriculo_limpo.pdf",
+                        mime="application/pdf",
+                        use_container_width=True
+                    )
+            elif codigo_digitado != "":
+                st.error("Código inválido.")
 
     # ==========================================================================
-    # MÁQUINA DE ESTADOS REATORA (PYTHON HARDCODED - CUSTO ZERO)
+    # MÁQUINA DE ESTADOS DO CHAT (COLETA E LAPIDAÇÃO)
     # ==========================================================================
     else:
-        user_input = st.chat_input("Escreva aqui...")
+        user_input = st.chat_input("Digite sua resposta aqui...")
+        
         if user_input:
             st.session_state.chat_history.append({"role": "user", "content": user_input})
             with st.chat_message("user"):
                 st.markdown(user_input)
                 
-            # FASE 1 -> FASE 2
+            # FASE 1: VAGA ALVO
             if st.session_state.step == "vaga_alvo":
                 st.session_state.vaga_alvo = user_input.strip()
                 st.session_state.step = "coleta_basica"
-                # Exatamente a string solicitada no plano:
                 next_msg = "Ótimo! Agora escreva do seu jeito um resumão sobre você: seu nome, sua cidade, e onde você já trabalhou ou estudou."
                 st.session_state.chat_history.append({"role": "assistant", "content": next_msg})
                 st.rerun()
                 
-            # FASE 2 -> FASE 3 (Varredura de baixo custo)
+            # FASE 2: VARREDURA INTELIGENTE (EXTRAÇÃO JSON)
             elif st.session_state.step == "coleta_basica":
-                with st.spinner("Analisando..."):
+                with st.spinner("Analisando suas informações..."):
                     dados_extraidos = extrair_dados_com_ia(user_input)
                     
-                    # Merge Seguro
+                    # MERGE INTELIGENTE DEFENSIVO
                     if isinstance(dados_extraidos.get("personal_info"), dict):
                         info = dados_extraidos["personal_info"]
-                        if info.get("full_name"): st.session_state.resume["personal_info"]["full_name"] = info["full_name"]
-                        if isinstance(info.get("contact"), dict):
-                            st.session_state.resume["personal_info"]["contact"].update(info["contact"])
-                        if isinstance(info.get("location"), dict):
-                            st.session_state.resume["personal_info"]["location"].update(info["location"])
-
+                        if info.get("full_name"): 
+                            st.session_state.resume["personal_info"]["full_name"] = info["full_name"]
+                        
+                        contact = info.get("contact")
+                        if isinstance(contact, dict):
+                            if contact.get("email"): st.session_state.resume["personal_info"]["contact"]["email"] = contact["email"]
+                            if contact.get("phone"): st.session_state.resume["personal_info"]["contact"]["phone"] = contact["phone"]
+                            
+                        location = info.get("location")
+                        if isinstance(location, dict):
+                            if location.get("city"): st.session_state.resume["personal_info"]["location"]["city"] = location["city"]
+                            
                     if dados_extraidos.get("professional_summary"):
                         st.session_state.resume["professional_summary"] = dados_extraidos["professional_summary"]
                         
-                    # Prevenção de loop: Atribuição direta se houver dados
                     if isinstance(dados_extraidos.get("work_experience"), list) and len(dados_extraidos["work_experience"]) > 0:
                         st.session_state.resume["work_experience"] = dados_extraidos["work_experience"]
+                        
                     if isinstance(dados_extraidos.get("education"), list) and len(dados_extraidos["education"]) > 0:
                         st.session_state.resume["education"] = dados_extraidos["education"]
+                        
                     if isinstance(dados_extraidos.get("skills"), dict) and len(dados_extraidos["skills"]) > 0:
                         st.session_state.resume["skills"] = dados_extraidos["skills"]
                         
-                # LÓGICA QUALITATIVA "ONE-SHOT"
+                # FASE 3: Lógica Qualitativa de Tiro Único (One-Shot)
                 exp_list = st.session_state.resume.get("work_experience", [])
-                if exp_list and len(exp_list[0].get("description", "")) < 20:
+                precisa_lapidacao = False
+                cargo_alvo = "seu emprego anterior"
+                
+                if exp_list:
+                    primeira_exp = exp_list[0]
+                    desc = primeira_exp.get("description", "")
+                    if len(desc) < 20:
+                        precisa_lapidacao = True
+                        cargo_alvo = primeira_exp.get("role_company", cargo_alvo)
+                
+                if precisa_lapidacao:
                     st.session_state.step = "lapidacao"
-                    cargo = exp_list[0].get("role_company", "seu emprego anterior")
-                    # Exatamente a string solicitada no plano:
-                    next_msg = f"Vi que você trabalhou como {cargo}. Para seu currículo chamar a atenção, é legal colocar o ano ou o que você fazia lá. Lembra de algum detalhe?"
+                    next_msg = f"Vi que você trabalhou como **{cargo_alvo}**. Para seu currículo chamar a atenção, é legal colocar uma estimativa de ano ou o que você mais fazia lá. Consegue me dar algum detalhe?"
                     st.session_state.chat_history.append({"role": "assistant", "content": next_msg})
                 else:
                     st.session_state.step = "geracao"
                     
                 st.rerun()
                 
-            # FASE 3 -> FASE 4 (Sem loop de "Quer adicionar mais?")
+            # FASE 3 -> FASE 4: LAPIDAÇÃO (Sem Loop)
             elif st.session_state.step == "lapidacao":
                 exp_list = st.session_state.resume.get("work_experience", [])
                 if exp_list:
                     desc_atual = str(exp_list[0].get("description", ""))
-                    # Junta o que o cliente respondeu (mesmo se for "não lembro") e manda pro milagre final.
-                    exp_list[0]["description"] = desc_atual + " | Detalhes extra: " + user_input.strip()
+                    exp_list[0]["description"] = desc_atual + " | Adicionais: " + user_input.strip()
                     
                 st.session_state.step = "geracao"
                 st.rerun()
