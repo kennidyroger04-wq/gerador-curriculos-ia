@@ -258,7 +258,9 @@ def extrair_dados_com_ia(texto):
         "{\n"
         '  "personal_info": {"full_name": "", "contact": {"email": "", "phone": ""}, "location": {"city": ""}},\n'
         '  "professional_summary": "",\n'
-        '  "work_experience": [{"role": "Cargo", "company": "Empresa", "period": "Datas/Ano", "description": "Atividades e funções brutas"}],\n'
+        '  "work_experience": [\n'
+        '    {"role": "Cargo", "company": "Empresa", "period": "Anos/Meses", "description": "Texto original"}\n'
+        '  ],\n'
         '  "education": [{"degree_institution": "Curso e Local"}],\n'
         '  "skills": {"Habilidade 1": "Nível", "Habilidade 2": "Nível"}\n'
         "}"
@@ -285,17 +287,16 @@ def polir_curriculo_com_ia(dados_brutos):
     client = OpenAI(api_key=API_KEY)
     vaga_alvo = st.session_state.vaga_alvo if st.session_state.vaga_alvo else "a área profissional informada"
     
-    # PROMPT ANTI-ALUCINAÇÃO CRÍTICO: Impede a IA de inventar % ou metas falsas
     system_prompt = (
-        f"Você é um Headhunter sênior adequando o currículo para a vaga de: '{vaga_alvo}'. "
-        f"O usuário tem dificuldade de escrita. Você deve reescrever as descrições de 'work_experience' "
-        f"usando verbos de ação na primeira pessoa do passado.\n\n"
-        f"REGRA DE OURO ESTRITA: É PROIBIDO inventar métricas, porcentagens, resultados financeiros ou "
-        f"tarefas que o usuário não mencionou. Trabalhe EXCLUSIVAMENTE com a verdade fornecida, focando apenas "
-        f"em deixar o vocabulário mais profissional.\n\n"
-        f"FORMATO DA DESCRIÇÃO: Dentro do array 'work_experience', a chave 'description' DEVE ser retornada como "
-        f"um Array de Strings (uma lista) onde cada string é um bullet point da tarefa.\n"
-        "Retorne EXCLUSIVAMENTE o JSON estruturado."
+        f"Você é um Headhunter de Elite (Nível Executivo) redigindo um currículo otimizado para sistemas ATS. A vaga alvo do candidato é: '{vaga_alvo}'.\n"
+        "O candidato tem dificuldade de escrita e forneceu resumos muito fracos (ex: 'atendia telefone' ou 'formatava PC').\n"
+        "Sua missão OBRIGATÓRIA é aplicar a técnica de EXPANSÃO SEMÂNTICA:\n\n"
+        "Transforme tarefas básicas em responsabilidades de alto nível usando o Método STAR e jargões corporativos da área.\n\n"
+        "Exemplo: Se ele escreveu 'formatava PC', você DEVE gerar um bullet point como: 'Realizou a manutenção preventiva e corretiva de hardwares, assegurando a estabilidade operacional da infraestrutura.'\n\n"
+        "REGRA DE OURO: É proibido inventar empresas, cargos ou métricas numéricas falsas (como 'aumentou 15%'). Enriqueça EXCLUSIVAMENTE o VOCABULÁRIO e o ESCOPO TÉCNICO da função que ele de fato exerceu.\n\n"
+        "Para CADA experiência, gere no mínimo 3 bullet points longos e robustos.\n\n"
+        "Formate a saída da chave 'description' obrigatoriamente como uma string contendo tags HTML de lista (<ul><li>...</li></ul>) para renderização direta.\n"
+        "Retorne APENAS o JSON válido mantendo a estrutura recebida."
     )
     
     try:
