@@ -213,11 +213,18 @@ if "resume" not in st.session_state:
         "professional_summary": "",
         "work_experience": [],
         "education": [],
-        "skills": {}
+        "skills": {},
+        "adicionais_usuario": ""
     }
 
 if "step" not in st.session_state:
     st.session_state.step = "vaga_alvo"
+
+if "rodadas_consultoria" not in st.session_state:
+    st.session_state.rodadas_consultoria = 0
+
+if "foco_atual" not in st.session_state:
+    st.session_state.foco_atual = None
 
 if "vaga_alvo" not in st.session_state:
     st.session_state.vaga_alvo = ""
@@ -255,6 +262,7 @@ def extrair_dados_com_ia(texto):
         "Você é um extrator de dados. Seu objetivo é ler o texto desestruturado do candidato e mapear "
         "os dados EXCLUSIVAMENTE para o seguinte esquema JSON.\n"
         "Se a informação não existir no texto, simplesmente omita a chave.\n"
+        "Ao ler o relato do usuário, você DEVE INFERIR pelo menos 4 a 6 Habilidades (Soft Skills e Hard Skills) pertinentes à história contada, mesmo que o usuário não as tenha listado explicitamente. Exemplo: Se ele trabalhou em caixa de mercado, adicione habilidades como 'Atendimento ao Público', 'Fechamento de Caixa' e 'Agilidade'.\n"
         "{\n"
         '  "personal_info": {"full_name": "", "contact": {"email": "", "phone": ""}, "location": {"city": ""}},\n'
         '  "professional_summary": "",\n'
@@ -288,15 +296,11 @@ def polir_curriculo_com_ia(dados_brutos):
     vaga_alvo = st.session_state.vaga_alvo if st.session_state.vaga_alvo else "a área profissional informada"
     
     system_prompt = (
-        f"Você é um Headhunter de Elite (Nível Executivo) redigindo um currículo otimizado para sistemas ATS. A vaga alvo do candidato é: '{vaga_alvo}'.\n"
-        "O candidato tem dificuldade de escrita e forneceu resumos muito fracos (ex: 'atendia telefone' ou 'formatava PC').\n"
-        "Sua missão OBRIGATÓRIA é aplicar a técnica de EXPANSÃO SEMÂNTICA:\n\n"
-        "Transforme tarefas básicas em responsabilidades de alto nível usando o Método STAR e jargões corporativos da área.\n\n"
-        "Exemplo: Se ele escreveu 'formatava PC', você DEVE gerar um bullet point como: 'Realizou a manutenção preventiva e corretiva de hardwares, assegurando a estabilidade operacional da infraestrutura.'\n\n"
-        "REGRA DE OURO: É proibido inventar empresas, cargos ou métricas numéricas falsas (como 'aumentou 15%'). Enriqueça EXCLUSIVAMENTE o VOCABULÁRIO e o ESCOPO TÉCNICO da função que ele de fato exerceu.\n\n"
-        "Para CADA experiência, gere no mínimo 3 bullet points longos e robustos.\n\n"
-        "Formate a saída da chave 'description' obrigatoriamente como uma string contendo tags HTML de lista (<ul><li>...</li></ul>) para renderização direta.\n"
-        "Retorne APENAS o JSON válido mantendo a estrutura recebida."
+        f"Você é um Headhunter de Elite construindo um currículo para a vaga de '{vaga_alvo}'. O usuário tem dificuldade de se expressar. Você recebeu os dados estruturados e notas adicionais dele.\n"
+        "Sua missão:\n\n"
+        f"Crie um Resumo Profissional altamente persuasivo conectando a história de vida/objetivos do usuário com a {vaga_alvo}.\n\n"
+        "Nas experiências, use o Método STAR. Expanda as respostas curtas em 3 bullet points detalhados usando verbos de ação fortes, formatados obrigatoriamente como uma lista HTML (<ul><li>...</li></ul>).\n\n"
+        "Seja criativo para valorizar o perfil, mas É PROIBIDO inventar empresas, cargos que ele não ocupou ou métricas numéricas falsas (como 'aumentou 15%'). Enriqueça a forma, mantenha a essência verdadeira."
     )
     
     try:
@@ -312,6 +316,20 @@ def polir_curriculo_com_ia(dados_brutos):
         return json.loads(response.choices[0].message.content.strip())
     except Exception:
         return dados_brutos
+
+def avaliar_pendencias_curriculo(resume):
+    if not resume.get("skills"):
+        return {"tipo": "habilidades"}
+        
+    for i, exp in enumerate(resume.get("work_experience", [])):
+        desc = exp.get("description", "")
+        period = exp.get("period", "")
+        palavras = [p for p in desc.split() if len(p) > 2]
+        if not period or len(palavras) < 8:
+            cargo = exp.get("role", exp.get("role_company", "Cargo desconhecido"))
+            return {"tipo": "experiencia", "cargo": cargo, "index": i}
+            
+    return None
 
 # ==============================================================================
 # MOTOR DE GERAÇÃO DE PDF (COM INTERCEPTAÇÃO DE LISTAS)
@@ -525,8 +543,8 @@ st.markdown(
 # ==============================================================================
 progresso_map = {
     "vaga_alvo": 10, 
-    "coleta_basica": 30, 
-    "lapidacao": 70, 
+    "coleta_basica": 40, 
+    "consultoria": 70,
     "geracao": 100
 }
 progresso_percentual = progresso_map.get(st.session_state.step, 10)
@@ -763,51 +781,65 @@ with col_chat:
                         st.session_state.resume["professional_summary"] = dados_extraidos["professional_summary"]
                         
                     if isinstance(dados_extraidos.get("work_experience"), list) and len(dados_extraidos["work_experience"]) > 0: 
-                        st.session_state.resume["work_experience"] = dados_extraidos["work_experience"]
+                        if info.get("full_name"): st.session_state.resume["personal_info"]["full_name"] = info["full_name"]
+                        if isinstance(info.get("contact"), dict): st.session_state.resume["personal_info"]["contact"].update(info["contact"])
+                        if isinstance(info.get("location"), dict): st.session_state.resume["personal_info"]["location"].update(info["location"])
                         
-                    if isinstance(dados_extraidos.get("education"), list) and len(dados_extraidos["education"]) > 0: 
-                        st.session_state.resume["education"] = dados_extraidos["education"]
+                    if dados_extraidos.get("professional_summary"): st.session_state.resume["professional_summary"] = dados_extraidos["professional_summary"]
+                    if isinstance(dados_extraidos.get("work_experience"), list) and len(dados_extraidos["work_experience"]) > 0: st.session_state.resume["work_experience"] = dados_extraidos["work_experience"]
+                    if isinstance(dados_extraidos.get("education"), list) and len(dados_extraidos["education"]) > 0: st.session_state.resume["education"] = dados_extraidos["education"]
+                    if isinstance(dados_extraidos.get("skills"), dict) and len(dados_extraidos["skills"]) > 0: st.session_state.resume["skills"] = dados_extraidos["skills"]
                         
-                    if isinstance(dados_extraidos.get("skills"), dict) and len(dados_extraidos["skills"]) > 0: 
-                        st.session_state.resume["skills"] = dados_extraidos["skills"]
-                        
-                # FASE 3: LÓGICA QUALITATIVA INTELIGENTE (Procura GAPS reais: Data ou Qualidade da Descrição)
-                exp_list = st.session_state.resume.get("work_experience", [])
-                precisa_lapidacao = False
-                cargo_alvo = "seu emprego anterior"
-                empresa_alvo = ""
-                
-                if exp_list:
-                    primeira_exp = exp_list[0]
-                    desc = primeira_exp.get("description", "")
-                    periodo = primeira_exp.get("period", "")
+                # FASE 2 -> 3: Transição para Consultoria
+                pendencia = avaliar_pendencias_curriculo(st.session_state.resume)
+                if pendencia and st.session_state.rodadas_consultoria < 2:
+                    st.session_state.step = "consultoria"
+                    st.session_state.foco_atual = pendencia
                     
-                    # Se falta a data OU a descrição for muito rasa/vazia
-                    if not periodo or len(desc) < 30:
-                        precisa_lapidacao = True
-                        
-                        if primeira_exp.get("role"):
-                            cargo_alvo = primeira_exp["role"]
-                            
-                        if primeira_exp.get("company"):
-                            empresa_alvo = f" na {primeira_exp['company']}"
-                
-                if precisa_lapidacao:
-                    st.session_state.step = "lapidacao"
-                    msg_lapida = f"Vi que você trabalhou como **{cargo_alvo}**{empresa_alvo}. Para não inventarmos informações, você consegue me dizer o **ano** em que esteve lá e as **2 principais tarefas** que fazia?"
-                    st.session_state.chat_history.append({"role": "assistant", "content": msg_lapida})
+                    if pendencia["tipo"] == "habilidades":
+                        msg = f"Seu perfil está tomando forma! Para a vaga de {st.session_state.vaga_alvo}, recrutadores amam ver ferramentas ou técnicas específicas. O que você domina na prática (ex: Excel, vendas, sistemas)?"
+                    else:
+                        msg = f"Vi que trabalhou como {pendencia['cargo']}. Para o currículo brilhar, preciso saber: em que ano isso ocorreu e qual era o principal problema que você resolvia no dia a dia por lá?"
+                    st.session_state.chat_history.append({"role": "assistant", "content": msg})
                 else:
                     st.session_state.step = "geracao"
                     
                 st.rerun()
                 
-            # FASE 3 -> 4: Lapidação One-Shot
-            elif st.session_state.step == "lapidacao":
-                exp_list = st.session_state.resume.get("work_experience", [])
+            # FASE 3: Loop Consultivo Inteligente
+            elif st.session_state.step == "consultoria":
+                user_lower = user_input.lower()
+                fuga = ["pular", "não lembro", "só isso", "não", "pode gerar"]
                 
-                if exp_list:
-                    desc_atual = str(exp_list[0].get("description", ""))
-                    exp_list[0]["description"] = desc_atual + " | Detalhes do Usuário: " + user_input.strip()
+                # Saída de Emergência
+                if any(palavra in user_lower for palavra in fuga):
+                    st.session_state.step = "geracao"
+                    st.rerun()
                     
-                st.session_state.step = "geracao"
+                # Merge da Resposta
+                foco = st.session_state.foco_atual
+                if foco["tipo"] == "habilidades":
+                    st.session_state.resume.setdefault("skills", {})["Adicionais"] = user_input.strip()
+                elif foco["tipo"] == "experiencia":
+                    idx = foco["index"]
+                    exp_list = st.session_state.resume.get("work_experience", [])
+                    if idx < len(exp_list):
+                        exp_list[idx]["description"] = exp_list[idx].get("description", "") + " | Resposta adicional: " + user_input.strip()
+                
+                st.session_state.rodadas_consultoria += 1
+                
+                # Avalia novamente
+                pendencia = avaliar_pendencias_curriculo(st.session_state.resume)
+                if pendencia and st.session_state.rodadas_consultoria < 2:
+                    st.session_state.foco_atual = pendencia
+                    if pendencia["tipo"] == "habilidades":
+                        msg = f"Excelente! E sobre conhecimentos técnicos? Há mais alguma ferramenta ou técnica que domina?"
+                    else:
+                        msg = f"E sobre sua experiência como {pendencia['cargo']}? Tem mais algum detalhe sobre os resultados que alcançou lá?"
+                    st.session_state.chat_history.append({"role": "assistant", "content": msg})
+                else:
+                    msg_fim = "Perfeito, reuni informações excelentes! Nossa IA vai montar o seu documento agora."
+                    st.session_state.chat_history.append({"role": "assistant", "content": msg_fim})
+                    st.session_state.step = "geracao"
+                
                 st.rerun()
