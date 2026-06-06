@@ -213,6 +213,7 @@ if "resume" not in st.session_state:
         "professional_summary": "",
         "work_experience": [],
         "education": [],
+        "courses_certifications": [],
         "skills": {},
         "adicionais_usuario": ""
     }
@@ -270,6 +271,7 @@ def extrair_dados_com_ia(texto):
         '    {"role": "Cargo", "company": "Empresa", "period": "Anos/Meses", "description": "Texto original"}\n'
         '  ],\n'
         '  "education": [{"degree_institution": "Curso e Local"}],\n'
+        '  "courses_certifications": [{"name": "Nome do Curso/Certificação", "institution": "Instituição"}],\n'
         '  "skills": {"Habilidade 1": "Nível", "Habilidade 2": "Nível"}\n'
         "}"
     )
@@ -329,6 +331,10 @@ def avaliar_pendencias_curriculo(resume):
             cargo = exp.get("role", exp.get("role_company", "Cargo desconhecido"))
             return {"tipo": "experiencia", "cargo": cargo, "index": i}
             
+    if not resume.get("courses_certifications"):
+        vaga = st.session_state.vaga_alvo if "vaga_alvo" in st.session_state and st.session_state.vaga_alvo else "sua área"
+        return {"tipo": "certificacoes", "ref": None, "pergunta": f"Para vagas de **{vaga}**, ter cursos rápidos, idiomas ou certificações técnicas faz toda a diferença no currículo. Você tem algum curso extra, idioma ou certificado para incluir?"}
+        
     return None
 
 # ==============================================================================
@@ -687,6 +693,25 @@ with col_preview:
                 {content}
             </div>
             """, unsafe_allow_html=True)
+            
+        # Renderização Lógica Expandida: Cursos Complementares
+        courses = resume.get("courses_certifications", [])
+        crs_html = ""
+        for crs in courses:
+            inst = f" - <em>{crs.get('institution')}</em>" if crs.get("institution") else ""
+            crs_html += f"<div class='preview-value' style='margin-bottom:0.5rem;'>🔖 <b>{crs.get('name', 'Curso')}</b>{inst}</div>"
+            
+        if not courses:
+            content = "<div class='preview-placeholder'>Nenhum curso extra adicionado.</div>"
+        else:
+            content = crs_html
+            
+        st.markdown(f"""
+            <div class="preview-card">
+                <div class="preview-header">🔖 Cursos e Certificações ({len(courses)})</div>
+                {content}
+            </div>
+            """, unsafe_allow_html=True)
         
     with tab_json:
         st.markdown("<p style='color:#64748b; font-size:0.85rem; margin-bottom: 0.5rem;'>Representação exata de st.session_state.resume:</p>", unsafe_allow_html=True)
@@ -798,6 +823,8 @@ with col_chat:
                     
                     if pendencia["tipo"] == "habilidades":
                         msg = f"Seu perfil está tomando forma! Para a vaga de {st.session_state.vaga_alvo}, recrutadores amam ver ferramentas ou técnicas específicas. O que você domina na prática (ex: Excel, vendas, sistemas)?"
+                    elif pendencia["tipo"] == "certificacoes":
+                        msg = pendencia["pergunta"]
                     else:
                         msg = f"Vi que trabalhou como {pendencia['cargo']}. Para o currículo brilhar, preciso saber: em que ano isso ocorreu e qual era o principal problema que você resolvia no dia a dia por lá?"
                     st.session_state.chat_history.append({"role": "assistant", "content": msg})
@@ -825,6 +852,8 @@ with col_chat:
                     exp_list = st.session_state.resume.get("work_experience", [])
                     if idx < len(exp_list):
                         exp_list[idx]["description"] = exp_list[idx].get("description", "") + " | Resposta adicional: " + user_input.strip()
+                elif foco["tipo"] == "certificacoes":
+                    st.session_state.resume.setdefault("courses_certifications", []).append({"name": user_input.strip()})
                 
                 st.session_state.rodadas_consultoria += 1
                 
@@ -834,6 +863,8 @@ with col_chat:
                     st.session_state.foco_atual = pendencia
                     if pendencia["tipo"] == "habilidades":
                         msg = f"Excelente! E sobre conhecimentos técnicos? Há mais alguma ferramenta ou técnica que domina?"
+                    elif pendencia["tipo"] == "certificacoes":
+                        msg = pendencia["pergunta"]
                     else:
                         msg = f"E sobre sua experiência como {pendencia['cargo']}? Tem mais algum detalhe sobre os resultados que alcançou lá?"
                     st.session_state.chat_history.append({"role": "assistant", "content": msg})
