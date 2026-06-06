@@ -295,9 +295,8 @@ def polir_curriculo_com_ia(dados_brutos):
         f"Você é um Headhunter de Elite construindo um currículo para a vaga de '{vaga_alvo}'. O usuário tem dificuldade de se expressar. Você recebeu os dados estruturados e notas adicionais dele.\n"
         "Sua missão:\n\n"
         f"Crie um Resumo Profissional altamente persuasivo conectando a história de vida/objetivos do usuário com a {vaga_alvo}.\n\n"
-        "Nas experiências, use o Método STAR. Expanda as respostas curtas em 3 bullet points detalhados usando verbos de ação fortes, formatados obrigatoriamente como uma lista HTML (<ul><li>...</li></ul>).\n\n"
-        "Para garantir que o documento caiba em 1 página, limite-se a detalhar no máximo as 3 experiências mais relevantes, focando em qualidade e não em quantidade.\n\n"
-        "Seja criativo para valorizar o perfil, mas É PROIBIDO inventar empresas, cargos que ele não ocupou ou métricas numéricas falsas (como 'aumentou 15%'). Enriqueça a forma, mantenha a essência verdadeira."
+        "REGRA ABSOLUTA DE SAÍDA: Você está PROIBIDO de copiar as descrições originais do usuário. Você DEVE obrigatoriamente reescrever o campo 'description' de TODAS as experiências profissionais utilizando o formato HTML de listas (<ul><li>Ação focada em resultado</li><li>Responsabilidade técnica</li></ul>). Transforme textos simples em conquistas corporativas aplicando o Método STAR, mas sem inventar métricas percentuais falsas.\n\n"
+        "Para garantir que o documento caiba em 1 página, limite-se a detalhar no máximo as 3 experiências mais relevantes, focando em qualidade e não em quantidade."
     )
     
     try:
@@ -526,7 +525,8 @@ st.markdown(
 # ==============================================================================
 progresso_map = {
     "vaga_alvo": 10, 
-    "coleta_basica": 40, 
+    "coleta_basica": 30, 
+    "auditoria_especifica": 50,
     "confirmacao_adicional": 70,
     "geracao": 100
 }
@@ -792,16 +792,44 @@ with col_chat:
                     if isinstance(dados_extraidos.get("education"), list) and len(dados_extraidos["education"]) > 0: st.session_state.resume["education"] = dados_extraidos["education"]
                     if isinstance(dados_extraidos.get("skills"), dict) and len(dados_extraidos["skills"]) > 0: st.session_state.resume["skills"] = dados_extraidos["skills"]
                         
-                # FASE 2 -> 3: Transição para Confirmação
-                st.session_state.step = "confirmacao_adicional"
-                msg = "Legal! Já estruturei essa base. Você quer adicionar mais alguma coisa? (Ex: cursos complementares como CAD ou de idiomas, mais locais onde trabalhou, ou habilidades que esqueceu). Se já estiver tudo certo, é só digitar 'Finalizar' ou 'Pode gerar'."
+                # FASE 2 -> 3: Transição
+                edu_vazia = not st.session_state.resume.get("education")
+                crs_vazio = not st.session_state.resume.get("courses_certifications")
+                
+                if edu_vazia and crs_vazio:
+                    st.session_state.step = "auditoria_especifica"
+                    vaga = st.session_state.vaga_alvo if st.session_state.vaga_alvo else "sua área"
+                    msg = f"Notei que você não mencionou sua formação acadêmica ou cursos complementares. Ter escolaridade, certificados ou idiomas faz muita diferença para vagas de **{vaga}**. Você tem alguma formação ou curso para adicionar?"
+                else:
+                    st.session_state.step = "confirmacao_adicional"
+                    msg = "Legal! Já estruturei essa base. Você quer adicionar mais alguma coisa? (Ex: cursos complementares como CAD ou de idiomas, mais locais onde trabalhou, ou habilidades que esqueceu). Se já estiver tudo certo, é só digitar 'Finalizar' ou 'Pode gerar'."
+                
                 st.session_state.chat_history.append({"role": "assistant", "content": msg})
                 st.rerun()
                 
-            # FASE 3: Loop de Confirmação Humano no Controle
+            # FASE 3: Auditoria Específica
+            elif st.session_state.step == "auditoria_especifica":
+                user_lower = user_input.lower()
+                fuga = ["não", "pular", "não tenho", "gera logo", "nenhum"]
+                
+                if any(palavra in user_lower for palavra in fuga):
+                    st.session_state.step = "geracao"
+                    st.rerun()
+                
+                with st.spinner("Integrando formação..."):
+                    novos_dados = extrair_dados_com_ia(user_input)
+                    if isinstance(novos_dados.get("education"), list): st.session_state.resume["education"].extend(novos_dados["education"])
+                    if isinstance(novos_dados.get("courses_certifications"), list): st.session_state.resume.setdefault("courses_certifications", []).extend(novos_dados["courses_certifications"])
+                    
+                st.session_state.step = "confirmacao_adicional"
+                msg = "Perfeito! Tem mais alguma informação que você gostaria de incluir no seu currículo antes de finalizarmos (como mais experiências, habilidades ocultas ou projetos)? Se estiver pronto, digite 'Finalizar'."
+                st.session_state.chat_history.append({"role": "assistant", "content": msg})
+                st.rerun()
+                
+            # FASE 4: Loop de Confirmação Humano no Controle
             elif st.session_state.step == "confirmacao_adicional":
                 user_lower = user_input.lower()
-                fuga = ["finalizar", "pode gerar", "já está bom", "não", "pular"]
+                fuga = ["finalizar", "pronto", "não", "pode gerar", "já está bom", "pular"]
                 
                 # Gatilho de Saída
                 if any(palavra in user_lower for palavra in fuga):
@@ -829,6 +857,6 @@ with col_chat:
                     if isinstance(novos_dados.get("courses_certifications"), list): st.session_state.resume.setdefault("courses_certifications", []).extend(novos_dados["courses_certifications"])
                     if isinstance(novos_dados.get("skills"), dict): st.session_state.resume["skills"].update(novos_dados["skills"])
                 
-                msg_loop = "Adicionado com sucesso! Tem mais alguma coisa para incluir ou podemos Finalizar?"
+                msg_loop = "Perfeito! Tem mais alguma informação que você gostaria de incluir no seu currículo antes de finalizarmos (como mais experiências, habilidades ocultas ou projetos)? Se estiver pronto, digite 'Finalizar'."
                 st.session_state.chat_history.append({"role": "assistant", "content": msg_loop})
                 st.rerun()
