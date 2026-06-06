@@ -221,12 +221,6 @@ if "resume" not in st.session_state:
 if "step" not in st.session_state:
     st.session_state.step = "vaga_alvo"
 
-if "rodadas_consultoria" not in st.session_state:
-    st.session_state.rodadas_consultoria = 0
-
-if "foco_atual" not in st.session_state:
-    st.session_state.foco_atual = None
-
 if "vaga_alvo" not in st.session_state:
     st.session_state.vaga_alvo = ""
 
@@ -302,6 +296,7 @@ def polir_curriculo_com_ia(dados_brutos):
         "Sua missão:\n\n"
         f"Crie um Resumo Profissional altamente persuasivo conectando a história de vida/objetivos do usuário com a {vaga_alvo}.\n\n"
         "Nas experiências, use o Método STAR. Expanda as respostas curtas em 3 bullet points detalhados usando verbos de ação fortes, formatados obrigatoriamente como uma lista HTML (<ul><li>...</li></ul>).\n\n"
+        "Para garantir que o documento caiba em 1 página, limite-se a detalhar no máximo as 3 experiências mais relevantes, focando em qualidade e não em quantidade.\n\n"
         "Seja criativo para valorizar o perfil, mas É PROIBIDO inventar empresas, cargos que ele não ocupou ou métricas numéricas falsas (como 'aumentou 15%'). Enriqueça a forma, mantenha a essência verdadeira."
     )
     
@@ -318,24 +313,6 @@ def polir_curriculo_com_ia(dados_brutos):
         return json.loads(response.choices[0].message.content.strip())
     except Exception:
         return dados_brutos
-
-def avaliar_pendencias_curriculo(resume):
-    if not resume.get("skills"):
-        return {"tipo": "habilidades"}
-        
-    for i, exp in enumerate(resume.get("work_experience", [])):
-        desc = exp.get("description", "")
-        period = exp.get("period", "")
-        palavras = [p for p in desc.split() if len(p) > 2]
-        if not period or len(palavras) < 8:
-            cargo = exp.get("role", exp.get("role_company", "Cargo desconhecido"))
-            return {"tipo": "experiencia", "cargo": cargo, "index": i}
-            
-    if not resume.get("courses_certifications"):
-        vaga = st.session_state.vaga_alvo if "vaga_alvo" in st.session_state and st.session_state.vaga_alvo else "sua área"
-        return {"tipo": "certificacoes", "ref": None, "pergunta": f"Para vagas de **{vaga}**, ter cursos rápidos, idiomas ou certificações técnicas faz toda a diferença no currículo. Você tem algum curso extra, idioma ou certificado para incluir?"}
-        
-    return None
 
 # ==============================================================================
 # MOTOR DE GERAÇÃO DE PDF (COM INTERCEPTAÇÃO DE LISTAS)
@@ -550,7 +527,7 @@ st.markdown(
 progresso_map = {
     "vaga_alvo": 10, 
     "coleta_basica": 40, 
-    "consultoria": 70,
+    "confirmacao_adicional": 70,
     "geracao": 100
 }
 progresso_percentual = progresso_map.get(st.session_state.step, 10)
@@ -815,62 +792,43 @@ with col_chat:
                     if isinstance(dados_extraidos.get("education"), list) and len(dados_extraidos["education"]) > 0: st.session_state.resume["education"] = dados_extraidos["education"]
                     if isinstance(dados_extraidos.get("skills"), dict) and len(dados_extraidos["skills"]) > 0: st.session_state.resume["skills"] = dados_extraidos["skills"]
                         
-                # FASE 2 -> 3: Transição para Consultoria
-                pendencia = avaliar_pendencias_curriculo(st.session_state.resume)
-                if pendencia and st.session_state.rodadas_consultoria < 2:
-                    st.session_state.step = "consultoria"
-                    st.session_state.foco_atual = pendencia
-                    
-                    if pendencia["tipo"] == "habilidades":
-                        msg = f"Seu perfil está tomando forma! Para a vaga de {st.session_state.vaga_alvo}, recrutadores amam ver ferramentas ou técnicas específicas. O que você domina na prática (ex: Excel, vendas, sistemas)?"
-                    elif pendencia["tipo"] == "certificacoes":
-                        msg = pendencia["pergunta"]
-                    else:
-                        msg = f"Vi que trabalhou como {pendencia['cargo']}. Para o currículo brilhar, preciso saber: em que ano isso ocorreu e qual era o principal problema que você resolvia no dia a dia por lá?"
-                    st.session_state.chat_history.append({"role": "assistant", "content": msg})
-                else:
-                    st.session_state.step = "geracao"
-                    
+                # FASE 2 -> 3: Transição para Confirmação
+                st.session_state.step = "confirmacao_adicional"
+                msg = "Legal! Já estruturei essa base. Você quer adicionar mais alguma coisa? (Ex: cursos complementares como CAD ou de idiomas, mais locais onde trabalhou, ou habilidades que esqueceu). Se já estiver tudo certo, é só digitar 'Finalizar' ou 'Pode gerar'."
+                st.session_state.chat_history.append({"role": "assistant", "content": msg})
                 st.rerun()
                 
-            # FASE 3: Loop Consultivo Inteligente
-            elif st.session_state.step == "consultoria":
+            # FASE 3: Loop de Confirmação Humano no Controle
+            elif st.session_state.step == "confirmacao_adicional":
                 user_lower = user_input.lower()
-                fuga = ["pular", "não lembro", "só isso", "não", "pode gerar"]
+                fuga = ["finalizar", "pode gerar", "já está bom", "não", "pular"]
                 
-                # Saída de Emergência
+                # Gatilho de Saída
                 if any(palavra in user_lower for palavra in fuga):
                     st.session_state.step = "geracao"
                     st.rerun()
                     
-                # Merge da Resposta
-                foco = st.session_state.foco_atual
-                if foco["tipo"] == "habilidades":
-                    st.session_state.resume.setdefault("skills", {})["Adicionais"] = user_input.strip()
-                elif foco["tipo"] == "experiencia":
-                    idx = foco["index"]
-                    exp_list = st.session_state.resume.get("work_experience", [])
-                    if idx < len(exp_list):
-                        exp_list[idx]["description"] = exp_list[idx].get("description", "") + " | Resposta adicional: " + user_input.strip()
-                elif foco["tipo"] == "certificacoes":
-                    st.session_state.resume.setdefault("courses_certifications", []).append({"name": user_input.strip()})
+                # Captura de Novos Dados via IA
+                with st.spinner("Integrando novas informações..."):
+                    novos_dados = extrair_dados_com_ia(user_input)
+                    
+                    if isinstance(novos_dados.get("personal_info"), dict):
+                        info = novos_dados["personal_info"]
+                        if info.get("full_name"): st.session_state.resume["personal_info"]["full_name"] = info["full_name"]
+                        if isinstance(info.get("contact"), dict): st.session_state.resume["personal_info"]["contact"].update(info["contact"])
+                        if isinstance(info.get("location"), dict): st.session_state.resume["personal_info"]["location"].update(info["location"])
+                        
+                    if novos_dados.get("professional_summary"):
+                        if st.session_state.resume.get("professional_summary"):
+                            st.session_state.resume["professional_summary"] += "\n" + novos_dados["professional_summary"]
+                        else:
+                            st.session_state.resume["professional_summary"] = novos_dados["professional_summary"]
+                            
+                    if isinstance(novos_dados.get("work_experience"), list): st.session_state.resume["work_experience"].extend(novos_dados["work_experience"])
+                    if isinstance(novos_dados.get("education"), list): st.session_state.resume["education"].extend(novos_dados["education"])
+                    if isinstance(novos_dados.get("courses_certifications"), list): st.session_state.resume.setdefault("courses_certifications", []).extend(novos_dados["courses_certifications"])
+                    if isinstance(novos_dados.get("skills"), dict): st.session_state.resume["skills"].update(novos_dados["skills"])
                 
-                st.session_state.rodadas_consultoria += 1
-                
-                # Avalia novamente
-                pendencia = avaliar_pendencias_curriculo(st.session_state.resume)
-                if pendencia and st.session_state.rodadas_consultoria < 2:
-                    st.session_state.foco_atual = pendencia
-                    if pendencia["tipo"] == "habilidades":
-                        msg = f"Excelente! E sobre conhecimentos técnicos? Há mais alguma ferramenta ou técnica que domina?"
-                    elif pendencia["tipo"] == "certificacoes":
-                        msg = pendencia["pergunta"]
-                    else:
-                        msg = f"E sobre sua experiência como {pendencia['cargo']}? Tem mais algum detalhe sobre os resultados que alcançou lá?"
-                    st.session_state.chat_history.append({"role": "assistant", "content": msg})
-                else:
-                    msg_fim = "Perfeito, reuni informações excelentes! Nossa IA vai montar o seu documento agora."
-                    st.session_state.chat_history.append({"role": "assistant", "content": msg_fim})
-                    st.session_state.step = "geracao"
-                
+                msg_loop = "Adicionado com sucesso! Tem mais alguma coisa para incluir ou podemos Finalizar?"
+                st.session_state.chat_history.append({"role": "assistant", "content": msg_loop})
                 st.rerun()
